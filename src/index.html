@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поисковый инструмент</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="search-wrapper">
+            <div class="search-container">
+                <input id="search-bar" type="text" placeholder="Поиск промптов..." class="search-bar" autofocus>
+                <button id="settings-btn" class="settings-btn" aria-label="Настройки">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+
+        <ul id="prompt-list" class="prompt-list hidden"></ul>
+
+        <div id="settings-modal" class="settings-modal hidden">
+            <div class="settings-modal-content">
+                <div class="modal-header">
+                    <h2>Настройки</h2>
+                    <button id="close-settings-btn" class="close-settings-btn" aria-label="Закрыть">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="prompt-file-path">Путь к файлу промптов:</label>
+                        <div class="file-input-group">
+                            <input id="prompt-file-path" type="text" placeholder="Выберите файл с промптами">
+                            <button id="browse-btn" class="browse-button" aria-label="Обзор">
+                                <i class="fas fa-folder-open"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="hotkey-config">Горячая клавиша:</label>
+                        <input id="hotkey-config" type="text" placeholder="Например: Ctrl+Space">
+                    </div>
+                    <button id="save-settings-btn" class="action-button">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./index.ts"></script>
+</body>
+</html>

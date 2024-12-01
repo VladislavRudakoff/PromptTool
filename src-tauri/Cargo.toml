@@ -1,0 +1,27 @@
+[package]
+name = "prompt_tool"
+version = "0.1.0"
+description = "Prompt tool"
+authors = ["you"]
+edition = "2021"
+
+[lib]
+name = "prompt_tool_lib"
+path = "src/lib.rs"
+
+# Зависимости для сборки
+[build-dependencies]
+tauri-build = { version = "2.0.3", features = [] }
+
+# Основные зависимости
+[dependencies]
+tokio = { version = "1.41.1" }
+tauri = { version = "2.1.1", features = [] }
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.133"
+toml = "0.8.19"
+global-hotkey = "0.6.3"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
