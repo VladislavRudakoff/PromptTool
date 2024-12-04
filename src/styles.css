@@ -12,12 +12,18 @@ body {
   overflow: hidden;
 }
 
+/* Базовый класс для скрытия элементов */
+.hidden {
+  display: none !important;
+}
+
 .app-container {
   width: 400px;
   background-color: #ffffff;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   border-radius: 10px;
   overflow: hidden;
+  position: relative;
 }
 
 /* Стили для поисковой строки */
@@ -57,16 +63,12 @@ body {
   padding: 5px;
   border-radius: 50%;
   transition: background-color 0.2s;
+  color: #555;
 }
 
 .settings-btn:hover {
   background-color: #e0e0e0;
-}
-
-.settings-btn img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
+  color: #007bff;
 }
 
 /* Список промптов */
@@ -74,8 +76,9 @@ body {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 200px;
+  max-height: calc(100vh - 60px);
   overflow-y: auto;
+  background: white;
 }
 
 .prompt-list li {
@@ -136,8 +139,8 @@ body {
   background-color: #0056b3;
 }
 
-/* Модальное окно */
-.modal {
+/* Модальное окно настроек */
+.settings-modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -150,66 +153,108 @@ body {
   z-index: 1000;
 }
 
-.modal.hidden {
-  visibility: hidden;
-}
-
-.modal-content {
+.settings-modal-content {
   background-color: #fff;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  width: 300px;
-  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  width: 400px;
+  position: relative;
 }
 
-.modal-content h2 {
-  margin: 0 0 10px;
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
   font-size: 18px;
   color: #333;
 }
 
-.modal-content label {
-  display: block;
-  text-align: left;
-  margin-bottom: 5px;
+.close-settings-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #555;
+  padding: 5px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.close-settings-btn:hover {
+  background-color: #f0f0f0;
+  color: #007bff;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
   font-size: 14px;
   color: #555;
 }
 
-.modal-content input {
-  width: calc(100% - 20px);
-  border: 1px solid #ccc;
+.file-input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.file-input-group input {
+  flex-grow: 1;
+}
+
+.browse-button {
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.browse-button:hover {
+  background: #e0e0e0;
+  color: #007bff;
+}
+
+input[type="text"] {
+  border: 1px solid #ddd;
   border-radius: 5px;
   padding: 8px;
   font-size: 14px;
-  margin-bottom: 15px;
+  outline: none;
+  transition: border-color 0.2s;
 }
 
-.modal-content .close-settings-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
+input[type="text"]:focus {
+  border-color: #007bff;
 }
 
-.modal-btn {
-  display: block;
-  width: calc(100% - 20px);
-  margin: 0 auto 10px;
-  padding: 10px;
-  background-color: #007bff;
-  color: #fff;
+.action-button {
+  background: #007bff;
+  color: white;
   border: none;
   border-radius: 5px;
-  cursor: pointer;
+  padding: 10px;
   font-size: 14px;
+  cursor: pointer;
   transition: background-color 0.2s;
 }
 
-.modal-btn:hover {
-  background-color: #0056b3;
+.action-button:hover {
+  background: #0056b3;
 }
