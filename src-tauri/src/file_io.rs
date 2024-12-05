@@ -1,9 +1,7 @@
 use std::fs;
 use std::path::Path;
 use std::io::Write;
-use std::collections::HashSet;
-use chrono::Utc;
-use crate::prompt::{Prompt, PromptList};
+use crate::prompt::PromptList;
 use crate::error::{Result, PromptToolError};
 use toml;
 use std::fs::File;

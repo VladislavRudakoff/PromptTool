@@ -7,7 +7,7 @@ use tauri::State;
 use std::path::PathBuf;
 use tauri::Manager;
 use prompt_tool_lib::{
-    file_io::{load_prompts, save_prompts},
+    file_io::load_prompts,
     prompt::{Prompt, PromptList, SearchFilter},
     error::{Result, PromptToolError},
 };
