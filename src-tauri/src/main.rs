@@ -195,6 +195,14 @@ async fn get_config(state: State<'_, AppState>) -> Result<AppConfig> {
         .map_err(|_| PromptToolError::Config("Ошибка получения конфигурации".to_string()))
 }
 
+/// Команда для сворачивания окна приложения
+#[tauri::command]
+async fn minimize_window(window: tauri::Window) {
+    if let Err(e) = window.minimize() {
+        eprintln!("Ошибка при сворачивании окна: {}", e);
+    }
+}
+
 /// Инициализация приложения
 fn initialize_app(app_handle: &tauri::AppHandle) -> Result<()> {
     // Создаем директорию prompts если её нет
@@ -253,7 +261,8 @@ fn main() {
             get_config,
             search_prompts,
             get_categories,
-            get_tags
+            get_tags,
+            minimize_window
         ])
         .plugin(tauri_plugin_dialog::init())
         .run(tauri::generate_context!())

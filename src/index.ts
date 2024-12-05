@@ -46,6 +46,30 @@ class PromptManager {
     private constructor() {
         this.initializeEventListeners();
         this.loadSettings().catch(console.error);
+
+        // Добавляем обработчик клика вне приложения
+        document.addEventListener('click', (event) => {
+            const target = event.target as HTMLElement;
+            const appContainer = document.querySelector('.app-container');
+            const settingsModal = document.getElementById('settings-modal');
+
+            // Если клик был вне приложения и не в модальном окне настроек
+            if (appContainer && 
+                !appContainer.contains(target) && 
+                settingsModal && 
+                !settingsModal.contains(target) &&
+                !settingsModal.classList.contains('hidden')) {
+                return; // Не сворачиваем, если открыты настройки
+            }
+
+            // Если клик был вне приложения и поисковая строка не в фокусе
+            if (appContainer && 
+                !appContainer.contains(target) && 
+                document.activeElement !== this.elements.searchBar) {
+                // Вызываем Tauri API для сворачивания окна
+                invoke('minimize_window');
+            }
+        });
     }
 
     /** Получение единственного экземпляра класса */
