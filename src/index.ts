@@ -46,6 +46,7 @@ class PromptManager {
     private constructor() {
         this.initializeEventListeners();
         this.loadSettings().catch(console.error);
+        this.initializeTheme();
 
         // Добавляем обработчик клика вне приложения
         document.addEventListener('click', (event) => {
@@ -205,6 +206,27 @@ class PromptManager {
             });
             this.elements.promptList.appendChild(li);
         });
+    }
+
+    /** Работа с темами */
+    private initializeTheme(): void {
+        const savedTheme = localStorage.getItem("theme") || "dark";
+        this.setTheme(savedTheme);
+
+        const themeToggle = document.getElementById("theme-toggle") as HTMLSelectElement;
+        if (themeToggle) {
+            themeToggle.value = savedTheme;
+            themeToggle.addEventListener("change", (e) => {
+                const selectedTheme = (e.target as HTMLSelectElement).value;
+                this.setTheme(selectedTheme);
+            });
+        }
+    }
+
+    private setTheme(theme: string): void {
+        const root = document.documentElement;
+        root.setAttribute("data-theme", theme);
+        localStorage.setItem("theme", theme);
     }
 }
 

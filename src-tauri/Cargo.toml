@@ -15,16 +15,27 @@ tauri-build = { version = "2.0.3", features = [] }
 
 # Основные зависимости
 [dependencies]
-tokio = { version = "1.41.1", features = ["full"] }
 tauri = { version = "2.1.1", features = [] }
 tauri-plugin-dialog = "2"
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
-toml = "0.8.19"
-global-hotkey = "0.6.3"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
+tantivy = "0.22.0"
+toml = "0.8.19"
+tempfile = "3.14.0"
+serial_test = "3.2.0"
 
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+
+[profile.dev]
+incremental = true # Скомпилируйте свой двоичный файл более мелкими шагами.
+
+[profile.release]
+codegen-units = 1 # Позволяет LLVM выполнять улучшеную оптимизацию.
+lto = true # Этот флаг определяет, использует ли LLVM оптимизацию времени компоновки.
+opt-level = "s" # Приоритет отдается небольшому размеру двоичного файла.
+panic = "abort" # Повышение производительности за счет отключения обработчиков тревожных сигналов.
+strip = true # Гарантирует удаление отладочных символов.

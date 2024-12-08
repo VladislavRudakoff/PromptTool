@@ -1,22 +1,19 @@
-import { invoke } from "@tauri-apps/api/core";
+import { mount } from 'svelte';
+import App from './App.svelte';
 
-let greetInputEl: HTMLInputElement | null;
-let greetMsgEl: HTMLElement | null;
+console.log('Initializing Svelte app...');
 
-async function greet() {
-  if (greetMsgEl && greetInputEl) {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    greetMsgEl.textContent = await invoke("greet", {
-      name: greetInputEl.value,
-    });
-  }
+const appElement = document.getElementById('app');
+
+if (!appElement) {
+  console.error('Critical: Element with id "app" not found');
+  throw new Error('Element with id "app" not found');
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  greetInputEl = document.querySelector("#greet-input");
-  greetMsgEl = document.querySelector("#greet-msg");
-  document.querySelector("#greet-form")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    await greet();
-  });
-});
+console.log('Mounting Svelte app to element:', appElement);
+
+const app = mount(App, {target: appElement});
+
+console.log('Svelte app mounted successfully');
+
+export default app;
