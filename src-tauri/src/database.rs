@@ -1,14 +1,15 @@
-use std::fs;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use tantivy::collector::TopDocs;
 use tantivy::{directory::MmapDirectory,
               doc, query::{QueryParser, TermQuery},
-              schema::{OwnedValue, Schema, STORED, TEXT},
+              schema::{IndexRecordOption, OwnedValue, Schema, STORED, TextFieldIndexing, TextOptions, INDEXED},
               Index,
-              IndexWriter
+              IndexWriter,
+              tokenizer::{LowerCaser, RemoveLongFilter, SimpleTokenizer, Stemmer, TextAnalyzer, TokenizerManager}
 };
+use tantivy::tokenizer::Language;
 
 /// Структура для представления записи в базе данных.
 /// Содержит основные данные, которые хранятся в индексе: название, теги, текст, время создания и редактирования.
@@ -37,10 +38,10 @@ pub struct Record {
 /// Эта структура обеспечивает добавление, редактирование, удаление и поиск записей в индексе.
 pub struct Database {
     /// Индекс Tantivy для поиска.
-    index: Index,
+    pub index: Index,
 
     /// Схема, определяющая поля для индекса.
-    schema: Schema,
+    pub schema: Schema,
 }
 
 impl Database {
@@ -55,26 +56,50 @@ impl Database {
         // Строим схему для индекса
         let mut schema_builder = Schema::builder();
 
-        // Добавляем поля для индексации с уникальным идентификатором
-        schema_builder.add_u64_field("id", STORED);                        // Идентификатор
-        schema_builder.add_text_field("title", TEXT | STORED);  // Название
-        schema_builder.add_text_field("tags", TEXT | STORED);   // Теги
-        schema_builder.add_text_field("text", TEXT | STORED);   // Текст
-        schema_builder.add_u64_field("created_at", STORED);                // Время создания
-        schema_builder.add_u64_field("updated_at", STORED);                // Время редактирования
+        // Регистрируем токенизаторы
+        let tokenizer_manager = TokenizerManager::default();
+
+        // Создаем мультиязычный токенизатор
+        let multilang_tokenizer = TextAnalyzer::builder(SimpleTokenizer::default())
+            .filter(RemoveLongFilter::limit(40))  // Ограничиваем длину токенов
+            .filter(LowerCaser)  // Приводим к нижнему регистру
+            .filter(Stemmer::new(Language::Russian))  // Стемминг для русского
+            .filter(Stemmer::new(Language::English))  // Стемминг для английского
+            .build();
+
+        tokenizer_manager.register("multilang", multilang_tokenizer.clone());
+
+        // Настраиваем индексацию для текстовых полей
+        let text_indexing = TextFieldIndexing::default()
+            .set_tokenizer("multilang")  // Используем мультиязычный токенизатор
+            .set_index_option(IndexRecordOption::WithFreqsAndPositions);
+
+        let text_options = TextOptions::default()
+            .set_indexing_options(text_indexing)
+            .set_stored();
+
+        let tag_indexing = TextFieldIndexing::default()
+            .set_tokenizer("raw")  // Для тегов используем raw токенизатор
+            .set_index_option(IndexRecordOption::Basic);
+
+        let tag_options = TextOptions::default()
+            .set_indexing_options(tag_indexing)
+            .set_stored();
+
+        // Добавляем поля с оптимизированными настройками
+        schema_builder.add_u64_field("id", INDEXED | STORED);  // Уникальный идентификатор
+        schema_builder.add_text_field("title", text_options.clone());  // Полнотекстовый поиск по заголовку
+        schema_builder.add_text_field("tags", tag_options);  // Точный поиск по тегам
+        schema_builder.add_text_field("text", text_options);  // Полнотекстовый поиск по содержимому
+        schema_builder.add_u64_field("created_at", STORED);  // Только хранение
+        schema_builder.add_u64_field("updated_at", STORED);  // Только хранение
 
         // Строим саму схему
         let schema = schema_builder.build();
 
-        let index_path = Path::new(index_path);
-        
-        fs::create_dir_all(index_path).unwrap();
-        
-        // Открываем или создаём директорию для хранения индекса
-        let directory = MmapDirectory::open(index_path).expect("Failed to open directory");
-
-        // Создаём индекс в указанной директории
-        let index = Index::open_or_create(directory, schema.clone()).expect("Failed to create index");
+        // Применяем токенизатор к индексу
+        let index = Index::open_or_create(MmapDirectory::open(Path::new(index_path)).unwrap(), schema.clone()).unwrap();
+        index.tokenizers().register("multilang", multilang_tokenizer);
 
         // Возвращаем структуру базы данных с индексом и схемой
         Database { index, schema }
@@ -93,18 +118,14 @@ impl Database {
         // Создаём writer для записи данных в индекс
         let mut index_writer = self.index.writer(50_000_000).expect("Failed to create writer");
 
-        // Получаем текущее время для создания записи
-        let created_at = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-        let updated_at = created_at;  // При добавлении записи время создания совпадает с временем редактирования
-
         // Создаём документ для записи в индекс
         let doc = doc!(
             self.schema.get_field("id").unwrap() => record.id,               // Добавляем идентификатор
             self.schema.get_field("title").unwrap() => record.title,         // Добавляем название
             self.schema.get_field("tags").unwrap() => record.tags.join(","), // Добавляем теги как строку
             self.schema.get_field("text").unwrap() => record.text,           // Добавляем текст
-            self.schema.get_field("created_at").unwrap() => created_at,      // Добавляем время создания
-            self.schema.get_field("updated_at").unwrap() => updated_at,      // Добавляем время редактирования
+            self.schema.get_field("created_at").unwrap() => record.created_at,      // Добавляем время создания
+            self.schema.get_field("updated_at").unwrap() => record.updated_at,      // Добавляем время редактирования
         );
 
         // Добавляем документ в индекс
@@ -143,8 +164,7 @@ impl Database {
 
         let top_docs = searcher.search(&query, &TopDocs::with_limit(1)).expect("Search failed");
         
-        if let Some ((_, doc_addr)) = top_docs.first() {
-            // Получаем существующий документ
+        if let Some((_, doc_addr)) = top_docs.first() {
             let retrieved_doc: tantivy::TantivyDocument = searcher.doc(*doc_addr).unwrap();
             
             // Извлекаем существующие значения
@@ -175,32 +195,36 @@ impl Database {
             let created_at = retrieved_doc
                 .get_first(self.schema.get_field("created_at").unwrap())
                 .and_then(|val| match val {
-                    OwnedValue::U64(u) => Some(u),
+                    OwnedValue::U64(t) => Some(t),
                     _ => None
                 })
                 .unwrap_or(&u64::MIN);
 
-            // Обновляем документ
-            let updated_doc = doc!(
+            let tags = new_tags.unwrap_or_else(|| {
+                current_tags.split(',')
+                    .map(|s| s.to_string())
+                    .collect()
+            });
+
+            let text = new_text.unwrap_or(&current_text);
+
+            let doc = doc!(
                 self.schema.get_field("id").unwrap() => id,
                 self.schema.get_field("title").unwrap() => current_title,
-                self.schema.get_field("tags").unwrap() => new_tags.map_or(current_tags, |tags| tags.join(",")),
-                self.schema.get_field("text").unwrap() => new_text.unwrap_or(&current_text),
+                self.schema.get_field("tags").unwrap() => tags.join(","),
+                self.schema.get_field("text").unwrap() => text,
                 self.schema.get_field("created_at").unwrap() => *created_at,
                 self.schema.get_field("updated_at").unwrap() => updated_at
             );
 
-            // Удаляем старый документ
             index_writer.delete_term(tantivy::Term::from_field_u64(id_field, id));
-
-            // Добавляем обновлённый документ в индекс
-            index_writer.add_document(updated_doc).expect("Failed to add document");
-
-            // Сохраняем изменения в индексе
+            index_writer.add_document(doc).expect("Failed to add updated document");
             index_writer.commit().expect("Failed to commit changes");
+            
+            Ok(())
+        } else {
+            Err("Record not found".into())
         }
-
-        Ok(())
     }
 
     /// Удаляет запись из индекса по её идентификатору.
@@ -316,7 +340,7 @@ impl Database {
                     .unwrap_or_default(),
                 created_at: *doc.get_first(self.schema.get_field("created_at").unwrap())
                     .and_then(|val| match val {
-                        OwnedValue::U64(u) => Some(u),
+                        OwnedValue::U64(t) => Some(t),
                         _ => None
                     })
                     .unwrap_or(&u64::MIN),
